@@ -1,7 +1,9 @@
 """sage.unpaywall module"""
 
-import httpx
+import tempfile
+from pathlib import Path
 
+import httpx
 from aiocache import cached
 
 EMAIL = "email@gmail.com"
@@ -42,3 +44,24 @@ async def get_authors(doi: str) -> list[set[str]]:
     """
     data = await get_paper_info(doi)
     return data.get("z_authors", [])
+
+
+async def download_paper(doi: str) -> Path | None:
+    """
+    Download the paper from the Unpaywall API.
+    :param doi: DOI of the paper
+    :return: Path to the downloaded paper or None if not found
+
+    The file is saved in a temporary directory and will be deleted when the program exits.
+    """
+
+    url = await get_paper_url(doi)
+    if url is None:
+        return None
+    with httpx.Client() as client:
+        response = client.get(url, follow_redirects=True)
+        if response.status_code == 200:
+            with tempfile.NamedTemporaryFile(delete=False) as f:
+                f.write(response.content)
+                return Path(f.name)
+    return None

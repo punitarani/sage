@@ -86,3 +86,21 @@ async def test_get_authors():
     doi = "10.1038/invalid-doi"
     authors = await get_authors(doi)
     assert authors == []
+
+
+@pytest.mark.asyncio
+async def test_download_paper():
+    """Test download_paper()"""
+
+    from sage.unpaywall import download_paper
+
+    # Test with a valid DOI
+    doi = "10.1038/s41586-021-03491-6"
+    filename = await download_paper(doi)
+    assert filename is not None
+    assert filename.exists()
+
+    # Test with an invalid DOI
+    doi = "10.1038/invalid-doi"
+    filename = await download_paper(doi)
+    assert filename is None
