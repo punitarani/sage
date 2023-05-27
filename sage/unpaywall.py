@@ -32,3 +32,13 @@ async def get_paper_url(doi: str) -> str | None:
     if "best_oa_location" in data:
         return data["best_oa_location"]["url_for_pdf"]
     return None
+
+
+async def get_authors(doi: str) -> list[set[str]]:
+    """
+    Get the authors of the paper from the Unpaywall API.
+    :param doi: DOI of the paper
+    :return: List of authors of the paper
+    """
+    data = await get_paper_info(doi)
+    return data.get("z_authors", [])
