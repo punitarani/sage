@@ -114,7 +114,12 @@ async def main():
             with Pool(cpu_count()) as p:
                 sim_paper_summaries = p.starmap(summarize_worker, list(paper_texts.items()))
 
-        paper_summaries.update({safe_filename(doi): summary for doi, summary in sim_paper_summaries})
+        paper_summaries.update(
+            {safe_filename(doi): summary
+             for doi, summary in sim_paper_summaries
+             if summary and summary != "error summarizing"
+             }
+        )
 
         for i, (doi, summary) in enumerate(sim_paper_summaries):
             st.subheader(f"{doi} ({similar_papers[i][1]})")
@@ -132,6 +137,10 @@ async def main():
                 if entity_id in paper_infos:
                     authors = await get_paper_authors(doi=doi)
 
+                    summary = paper_summaries.get(safe_filename(doi), None)
+                    if not summary:
+                        raise ValueError(f"Error summarizing {doi}")
+
                     docs.append(
                         Document(
                             name=safe_filename(doi),
@@ -144,7 +153,7 @@ async def main():
                             authors=authors,
                         )
                     )
-            except KeyError as e:
+            except (KeyError, ValueError) as e:
                 print(e)
 
         add_multiple_documents(docs)
@@ -153,7 +162,7 @@ async def main():
         embeddings = []
         with st.spinner("Embedding papers..."):
             for doc in docs:
-                embeddings.append(str_to_embeddings(doc.text[:1000]))
+                embeddings.append(str_to_embeddings(doc.text[:5000]))
 
         # Display the embeddings
         components.iframe(visualize(embeddings_vectors=embeddings, metadatas=docs), height=600)
