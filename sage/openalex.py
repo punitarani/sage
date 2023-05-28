@@ -1,6 +1,7 @@
 """sage.openalex module"""
 
 import asyncio
+from typing import Any
 
 import httpx
 from aiolimiter import AsyncLimiter
@@ -56,7 +57,7 @@ def calculate_similarity_score(paper1: list[str], paper2: list[str]) -> int:
     return len(set(paper1) & set(paper2))
 
 
-async def find_similar_papers(doi: str):
+async def find_similar_papers(doi: str) -> list[tuple[Any, Any]]:
     """
     Find similar papers based on the references they share.
     """
@@ -70,16 +71,10 @@ async def find_similar_papers(doi: str):
         """
         papers_to_compare = await get_paper_references(citation)
 
-        result = []
-
-        # FIXME: is this the correct way to do this?
-        for item in papers_to_compare:
-            references = item['referenced_works']
-            similarity_score = calculate_similarity_score(citations, references)
-
-            result.append((citation, similarity_score))
-
-        return result
+        return [
+            (citation, calculate_similarity_score(citations, item['referenced_works']))
+            for item in papers_to_compare
+        ]
 
     # Create a list of tasks to run fetch_and_score for each citation concurrently
     tasks = [fetch_and_score(citation) for citation in citations]
@@ -87,8 +82,13 @@ async def find_similar_papers(doi: str):
     # Run all tasks concurrently and wait for them to complete
     results = await asyncio.gather(*tasks)
 
-    # Flatten the list of results
-    # TODO: update this after the above FIXME is fixed
-    results = [result for sublist in results for result in sublist]
+    # Flatten the list of results and sum the scores for each citation
+    citation_scores = {}
+    for result in results:
+        for citation, score in result:
+            citation_scores[citation] = citation_scores.get(citation, 0) + score
 
-    return results
+    # Sort by scores in descending order
+    sorted_results = sorted(citation_scores.items(), key=lambda x: x[1], reverse=True)
+
+    return sorted_results
