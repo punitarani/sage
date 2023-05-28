@@ -4,3 +4,6 @@
 ### IDEs
 .idea/
 .vscode/
+sage/__pycache__/
+.chroma/
+index/
