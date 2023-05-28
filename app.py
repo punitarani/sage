@@ -8,7 +8,9 @@ import asyncio
 
 import streamlit as st
 
+from sage.document import load_pdf_document
 from sage.openalex import find_similar_papers
+from sage.summarize import summarize_text_abstractive
 from sage.unpaywall import get_paper_info, download_paper
 
 if __name__ == "__main__":
@@ -43,3 +45,10 @@ if __name__ == "__main__":
     with open(download_path, "rb") as f:
         download_data = f.read()
     st.download_button("Download PDF", data=download_data, file_name=f"{doi_input}.pdf")
+
+    with st.spinner("Summarizing paper..."):
+        text = load_pdf_document(download_path)
+        summary = asyncio.run(summarize_text_abstractive(text))
+
+    st.header("Summary")
+    st.write(summary)
