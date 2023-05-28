@@ -18,6 +18,7 @@ aiolimiter = "^1.1.0"
 tenacity = "^8.2.2"
 python-dotenv = "^1.0.0"
 azure-ai-textanalytics = "5.3.0b2"
+fastapi = "^0.95.2"
 
 
 [build-system]
