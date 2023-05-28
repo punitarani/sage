@@ -5,6 +5,18 @@ from pathlib import Path
 
 import unicodedata
 from langchain.document_loaders import PyMuPDFLoader
+from pydantic import BaseModel
+
+
+class Document(BaseModel):
+    """Document model"""
+    name: str
+    url: str
+    text: str
+    summary: str
+    authors: str | list
+    doi: str
+    date: str
 
 
 def load_pdf_document(filepath: Path) -> str:
