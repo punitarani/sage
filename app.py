@@ -105,7 +105,7 @@ async def main():
 
         with st.spinner("Summarizing papers..."):
             with Pool(cpu_count()) as p:
-                sim_paper_summaries = p.starmap(summarize_worker, list(paper_texts.items())[:3])
+                sim_paper_summaries = p.starmap(summarize_worker, list(paper_texts.items()))
 
         paper_summaries.update({doi: summary for doi, summary in sim_paper_summaries})
 
