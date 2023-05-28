@@ -47,7 +47,10 @@ async def get_openalex_work(doi: str = None, entity_id: str = None) -> dict:
     :return: List of citations of the paper
     """
     if doi:
-        url = 'https://api.openalex.org/works/https://doi.org/' + doi
+        if doi.startswith("https://doi.org/"):
+            url = doi
+        else:
+            url = 'https://api.openalex.org/works/https://doi.org/' + doi
     elif entity_id:
         url = 'https://api.openalex.org/works/' + entity_id
     else:
