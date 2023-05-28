@@ -1,10 +1,11 @@
 """sage.unpaywall module"""
 
-import tempfile
 from pathlib import Path
 
 import httpx
 from aiocache import cached
+
+from . import DATA_DIR
 
 EMAIL = "email@gmail.com"
 
@@ -52,17 +53,32 @@ async def download_paper(doi: str) -> Path | None:
     Download the paper from the Unpaywall API.
     :param doi: DOI of the paper
     :return: Path to the downloaded paper or None if not found
-
-    The file is saved in a temporary directory and will be deleted when the program exits.
     """
+    filename = safe_filename(doi) + ".pdf"
+    filepath = DATA_DIR.joinpath(filename)
+
+    # If the file already exists, return it
+    if filepath.exists():
+        return filepath
 
     url = await get_paper_url(doi)
     if url is None:
         return None
+
+    # Download the file
     async with httpx.AsyncClient() as client:
         response = await client.get(url, follow_redirects=True)
         if response.status_code == 200:
-            with tempfile.NamedTemporaryFile(delete=False) as f:
+            with open(filepath, "wb") as f:
                 f.write(response.content)
-                return Path(f.name)
+            return filepath
     return None
+
+
+def safe_filename(doi: str) -> str:
+    """
+    Creates a safe filename from a DOI, replacing characters that are not allowed in filenames.
+    :param doi: DOI of the paper
+    :return: Safe filename
+    """
+    return ''.join(c if c.isalnum() else '_' for c in doi)
