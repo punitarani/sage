@@ -40,8 +40,8 @@ async def get_paper_data(paper):
 
 
 @cache
-def summarize_worker(doi: str, paper_text: str) -> str:
-    return doi, summarize_text_abstractive(paper_text)
+def summarize_worker(doi: str, text: str) -> tuple[str, str]:
+    return doi, summarize_text_abstractive(doi=doi, text=text)
 
 
 async def main():
