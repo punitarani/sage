@@ -158,72 +158,72 @@ async def main():
             st.subheader(title)
             st.write(summary)
 
-    st.header("Visualization")
+        st.header("Visualization")
 
-    # Build the document objects
-    docs = []
-    for doi in [doi_input, *selected_papers]:
-        openalex_work = await get_openalex_work(doi=doi)
-        entity_id = openalex_work.get("id", None)
+        # Build the document objects
+        docs = []
+        for doi in [doi_input, *selected_papers]:
+            openalex_work = await get_openalex_work(doi=doi)
+            entity_id = openalex_work.get("id", None)
 
-        try:
-            if entity_id in paper_infos:
-                authors = await get_paper_authors(doi=doi)
+            try:
+                if entity_id in paper_infos:
+                    authors = await get_paper_authors(doi=doi)
 
-                summary = paper_summaries.get(safe_filename(doi), None)
-                if not summary:
-                    raise ValueError(f"Error summarizing {doi}")
+                    summary = paper_summaries.get(safe_filename(doi), None)
+                    if not summary:
+                        raise ValueError(f"Error summarizing {doi}")
 
-                docs.append(
-                    Document(
-                        name=safe_filename(doi),
-                        title=paper_infos[entity_id]["title"],
-                        url=paper_infos[entity_id]["doi_url"],
-                        text=paper_texts[safe_filename(doi)],
-                        summary=paper_summaries[safe_filename(doi)],
-                        doi=doi,
-                        date=paper_infos[entity_id]["published_date"],
-                        authors=authors,
+                    docs.append(
+                        Document(
+                            name=safe_filename(doi),
+                            title=paper_infos[entity_id]["title"],
+                            url=paper_infos[entity_id]["doi_url"],
+                            text=paper_texts[safe_filename(doi)],
+                            summary=paper_summaries[safe_filename(doi)],
+                            doi=doi,
+                            date=paper_infos[entity_id]["published_date"],
+                            authors=authors,
+                        )
                     )
-                )
-        except (KeyError, ValueError) as e:
-            print(e)
+            except (KeyError, ValueError) as e:
+                print(e)
 
-    add_multiple_documents(docs)
+        add_multiple_documents(docs)
 
-    # Embed the documents
-    embeddings = []
-    with st.spinner("Embedding papers..."):
-        for doc in docs:
-            embeddings.append(str_to_embeddings(doc.text[:5000]))
+        # Embed the documents
+        embeddings = []
+        with st.spinner("Embedding papers..."):
+            for doc in docs:
+                embeddings.append(str_to_embeddings(doc.text[:5000]))
 
-    # Display the embeddings
-    components.iframe(visualize(embeddings_vectors=embeddings, metadatas=docs), height=600)
+        # Display the embeddings
+        components.iframe(visualize(embeddings_vectors=embeddings, metadatas=docs), height=600)
 
-    st.divider()
-    st.header("Chat with Sage")
-    if 'generated' not in st.session_state:
-        st.session_state['generated'] = []
+        st.divider()
+        st.header("Chat with Sage")
+        if 'generated' not in st.session_state:
+            st.session_state['generated'] = []
 
-    if 'past' not in st.session_state:
-        st.session_state['past'] = []
+        if 'past' not in st.session_state:
+            st.session_state['past'] = []
 
-    def get_text():
-        input_text = st.text_input("Talk to all selected papers: ", "", key="input")
-        return input_text
+        def get_text():
+            input_text = st.text_input("Talk to all selected papers: ", "", key="input")
+            return input_text
 
-    user_input = get_text()
+        user_input = get_text()
 
-    if user_input:
-        output = chat.query(user_input)
+        if user_input:
+            output = chat.query(user_input)
 
-        st.session_state.past.append(user_input)
-        st.session_state.generated.append(f"{output['answer']}\nSources: {output['sources']}")
+            st.session_state.past.append(user_input)
+            st.session_state.generated.append(f"{output['answer']}\nSources: {output['sources']}")
 
-        if st.session_state['generated']:
-            for i in range(len(st.session_state['generated']) - 1, -1, -1):
-                message(st.session_state["generated"][i], key=str(i))
-                message(st.session_state['past'][i], is_user=True, key=str(i) + '_user')
+            if st.session_state['generated']:
+                for i in range(len(st.session_state['generated']) - 1, -1, -1):
+                    message(st.session_state["generated"][i], key=str(i))
+                    message(st.session_state['past'][i], is_user=True, key=str(i) + '_user')
 
 
 if __name__ == "__main__":
