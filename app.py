@@ -59,14 +59,16 @@ async def main():
     sim_paper_checkboxes = {}
 
     st.header("Similar papers")
-    for sim_paper_info in similar_paper_infos:
+    for i, sim_paper_info in enumerate(similar_paper_infos):
         # Get title of similar paper
         sim_paper_title = sim_paper_info.get("title", None)
         if not sim_paper_title:
             sim_paper_title = sim_paper_info.get("doi", None)
 
+        sim_paper_score = similar_papers[i][1]
+
         # Display checkbox for each similar paper
-        checkbox = st.checkbox(sim_paper_title)
+        checkbox = st.checkbox(f"{sim_paper_title} ({sim_paper_score})")
         sim_paper_checkboxes[sim_paper_title] = checkbox
 
     if st.button("Generate"):
