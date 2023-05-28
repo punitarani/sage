@@ -17,8 +17,8 @@ async def get_paper_info(doi: str) -> dict:
     :return: Info of the paper
     """
     request_url = f"https://api.unpaywall.org/v2/{doi}?email={EMAIL}"
-    with httpx.Client() as client:
-        response = client.get(request_url)
+    async with httpx.AsyncClient() as client:
+        response = await client.get(request_url)
         if response.status_code == 200:
             return response.json()
     return {}
@@ -58,8 +58,8 @@ async def download_paper(doi: str) -> Path | None:
     url = await get_paper_url(doi)
     if url is None:
         return None
-    with httpx.Client() as client:
-        response = client.get(url, follow_redirects=True)
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, follow_redirects=True)
         if response.status_code == 200:
             with tempfile.NamedTemporaryFile(delete=False) as f:
                 f.write(response.content)
