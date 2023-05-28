@@ -9,9 +9,12 @@ import asyncio
 import streamlit as st
 
 from sage.document import load_pdf_document
-from sage.openalex import find_similar_papers
+from sage.openalex import find_similar_papers, get_openalex_work
 from sage.summarize import summarize_text_abstractive
 from sage.unpaywall import get_paper_info, download_paper
+
+paper_openalex_works = {}
+paper_infos = {}
 
 
 async def main():
@@ -36,9 +39,29 @@ async def main():
     with st.spinner("Finding similar papers..."):
         similar_papers = await find_similar_papers(doi_input)
 
+    similar_papers_progress = st.progress(0, text="Loading similar papers...")
     with st.expander("Similar papers"):
-        for paper in similar_papers:
-            st.write(f"{paper[0]} - {paper[1]}")
+        num_similar_papers = len(similar_papers)
+        for i, paper in enumerate(similar_papers):
+            sim_entity_id = paper[0]
+            sim_score = paper[1]
+
+            sim_openalex_work = await get_openalex_work(entity_id=sim_entity_id)
+            paper_openalex_works[sim_entity_id] = sim_openalex_work
+
+            sim_doi = sim_openalex_work.get("doi", None)
+            if sim_doi:
+                sim_paper_info = await get_paper_info(doi=sim_doi)
+                paper_infos[sim_entity_id] = sim_paper_info
+
+                sim_paper_title = sim_paper_info.get("title", None)
+                if not sim_paper_title:
+                    sim_paper_title = sim_paper_info.get("doi", None)
+
+                st.write(f"{sim_paper_title} ({sim_score})")
+
+            # Update progress bar
+            similar_papers_progress.progress((i + 1) / num_similar_papers)
 
     with st.spinner("Downloading paper..."):
         download_path = await download_paper(doi_input)
