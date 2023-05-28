@@ -5,6 +5,7 @@ from pathlib import Path
 import httpx
 from aiocache import cached
 
+from sage.utils import safe_filename
 from . import DATA_DIR
 
 EMAIL = "email@gmail.com"
@@ -73,12 +74,3 @@ async def download_paper(doi: str) -> Path | None:
                 f.write(response.content)
             return filepath
     return None
-
-
-def safe_filename(doi: str) -> str:
-    """
-    Creates a safe filename from a DOI, replacing characters that are not allowed in filenames.
-    :param doi: DOI of the paper
-    :return: Safe filename
-    """
-    return ''.join(c if c.isalnum() else '_' for c in doi)
