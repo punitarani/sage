@@ -88,7 +88,8 @@ async def main():
         sim_paper_score = similar_papers[i][1]
 
         # Display checkbox for each similar paper
-        checkbox = st.checkbox(f"{sim_paper_title} ({sim_paper_score})")
+        default_value = True if i < 15 else False
+        checkbox = st.checkbox(f"{sim_paper_title} ({sim_paper_score})", value=default_value)
         sim_paper_checkboxes[sim_paper_info["doi"]] = checkbox
 
     if st.button("Generate"):
@@ -122,7 +123,19 @@ async def main():
         )
 
         for i, (doi, summary) in enumerate(sim_paper_summaries):
-            st.subheader(f"{doi} ({similar_papers[i][1]})")
+            try:
+                openalex_work = await get_openalex_work(doi=doi)
+                entity_id = openalex_work.get("id", None)
+                title = paper_infos[entity_id].get("title", None)
+            except Exception as e:
+                title = None
+
+            if not title:
+                title = doi
+            else:
+                title = f"{title} ({doi})"
+
+            st.subheader(title)
             st.write(summary)
 
         st.header("Visualization")
