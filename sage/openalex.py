@@ -1,18 +1,27 @@
 """sage.openalex module"""
 
 import asyncio
+from json import JSONDecodeError
 from typing import Any
 
 import httpx
 from aiolimiter import AsyncLimiter
-from tenacity import retry, stop_after_attempt, wait_exponential
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 EMAIL = "email@gmail.com"
 
 openalex_limiter = AsyncLimiter(max_rate=10, time_period=1)
 
 
-@retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=2, max=16))
+class OpenAlexError(Exception):
+    """OpenAlex error"""
+
+
+@retry(
+    stop=stop_after_attempt(5),
+    wait=wait_exponential(multiplier=1, min=2, max=16),
+    retry=retry_if_exception_type(JSONDecodeError)
+)
 async def openalex_get(url: str) -> dict:
     """
     Get the paper info from the OpenAlex API.
@@ -22,6 +31,8 @@ async def openalex_get(url: str) -> dict:
     async with openalex_limiter:
         async with httpx.AsyncClient() as client:
             response = await client.get(url, params={"email": EMAIL})
+            if response.status_code == 404:
+                raise OpenAlexError("Paper not found")
             return response.json()
 
 
