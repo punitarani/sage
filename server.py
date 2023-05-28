@@ -75,20 +75,22 @@ async def get_openalex_work_handler(doi: str) -> dict:
 
 
 @app.get("/summarize-abstractive")
-async def summarize_text_abstractive_handler(text: str) -> str:
+async def summarize_text_abstractive_handler(text: str, doi: str = None) -> str:
     """
     Summarize text using abstractive summarization.
     :param text: Text to summarize
+    :param doi: DOI of the paper
     :return: Summary of the text
     """
-    return await summarize_text_abstractive_async(text)
+    return await summarize_text_abstractive_async(doi=doi, text=text)
 
 
 @app.get("/summarize-extractive")
-async def summarize_text_extractive_handler(text: str) -> str:
+async def summarize_text_extractive_handler(text: str, doi: str = None) -> str:
     """
     Summarize text using extractive summarization.
     :param text: Text to summarize
+    :param doi: DOI of the paper
     :return: Summary of the text
     """
-    return await summarize_text_extractive_async(text)
+    return await summarize_text_extractive_async(doi=doi, text=text)
