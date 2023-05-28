@@ -5,6 +5,7 @@ from json import JSONDecodeError
 from typing import Any
 
 import httpx
+from aiocache import cached
 from aiolimiter import AsyncLimiter
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
@@ -22,6 +23,7 @@ class OpenAlexError(Exception):
     wait=wait_exponential(multiplier=1, min=2, max=16),
     retry=retry_if_exception_type(JSONDecodeError)
 )
+@cached()
 async def openalex_get(url: str) -> dict:
     """
     Get the paper info from the OpenAlex API.
@@ -30,30 +32,36 @@ async def openalex_get(url: str) -> dict:
     """
     async with openalex_limiter:
         async with httpx.AsyncClient() as client:
-            response = await client.get(url, params={"email": EMAIL})
+            response = await client.get(url, params={"email": EMAIL}, follow_redirects=True)
             if response.status_code == 404:
                 raise OpenAlexError("Paper not found")
             return response.json()
 
 
+@cached()
 async def get_paper_citations(doi: str) -> list[str]:
     """
     Get the citations of the paper from the OpenAlex API.
     :param doi: DOI of the paper
     :return: List of citations of the paper
     """
-    url = 'https://api.openalex.org/works/' + doi
+    url = 'https://api.openalex.org/works/https://doi.org/' + doi
     response = await openalex_get(url)
     return response.get("referenced_works", [])
 
 
+@cached()
 async def get_paper_references(doi: str) -> list[dict]:
     """
     Get the references of the paper from the OpenAlex API.
     :param doi: DOI of the paper
     :return: List of references to the paper
     """
-    url = 'https://api.openalex.org/works?filter=cites:' + doi
+    url = 'https://api.openalex.org/works/' + doi
+    response = await openalex_get(url)
+    entity_id = response.get("id")
+
+    url = 'https://api.openalex.org/works?filter=cites:' + entity_id
     response = await openalex_get(url)
     return response.get("results", [])
 
@@ -68,6 +76,7 @@ def calculate_similarity_score(paper1: list[str], paper2: list[str]) -> int:
     return len(set(paper1) & set(paper2))
 
 
+@cached()
 async def find_similar_papers(doi: str) -> list[tuple[Any, Any]]:
     """
     Find similar papers based on the references they share.
