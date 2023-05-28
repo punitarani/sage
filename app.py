@@ -8,11 +8,15 @@ import asyncio
 
 import streamlit as st
 
+from sage.document import load_pdf_document
 from sage.openalex import find_similar_papers, get_openalex_work
-from sage.unpaywall import get_paper_info
+from sage.summarize import summarize_text_abstractive
+from sage.unpaywall import get_paper_info, download_paper
 
-paper_openalex_works = {}
-paper_infos = {}
+paper_openalex_works = {}  # entity_id -> openalex_work
+paper_infos = {}  # entity_id -> paper_info
+paper_texts = {}  # doi -> text
+paper_summaries = {}  # doi -> summary
 
 
 async def get_paper_data(paper):
@@ -69,13 +73,37 @@ async def main():
 
         # Display checkbox for each similar paper
         checkbox = st.checkbox(f"{sim_paper_title} ({sim_paper_score})")
-        sim_paper_checkboxes[sim_paper_title] = checkbox
+        sim_paper_checkboxes[sim_paper_info["doi"]] = checkbox
 
     if st.button("Generate"):
         st.header("Selected papers")
-        for sim_paper_title, checkbox in sim_paper_checkboxes.items():
-            if checkbox:
-                st.write(sim_paper_title)
+        selected_papers = [
+            sim_paper_doi
+            for sim_paper_doi, checkbox in sim_paper_checkboxes.items()
+            if checkbox
+        ]
+
+        with st.spinner("Downloading papers..."):
+            coroutines = [download_paper(doi) for doi in [doi_input, *selected_papers]]
+            downloaded_papers = await asyncio.gather(*coroutines)
+
+        loaded_paper_texts_progress = st.progress(0)
+        for i, downloaded_paper in enumerate(downloaded_papers):
+            if downloaded_paper:
+                paper_texts[downloaded_paper.stem] = load_pdf_document(downloaded_paper)
+            loaded_paper_texts_progress.progress((i + 1) / len(downloaded_papers))
+
+        with st.spinner("Summarizing papers..."):
+            coroutines = [summarize_text_abstractive(paper_text) for paper_text in list(paper_texts.values())[:3]]
+            sim_paper_summaries = await asyncio.gather(*coroutines)
+
+        for sim_paper_summary in sim_paper_summaries:
+            paper_summaries[sim_paper_summary[0]] = sim_paper_summary[1]
+            print(sim_paper_summary[0], sim_paper_summary[1][:10])
+
+        for i, (paper_doi, paper_summary) in enumerate(zip(paper_texts.keys(), paper_summaries)):
+            st.header(f"{paper_doi}")
+            st.write(paper_summary)
 
 
 if __name__ == "__main__":
