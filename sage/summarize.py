@@ -1,8 +1,11 @@
 """sage.summarize module"""
 
+from aiocache import cached
+
 from sage.azure import text_analytics_client
 
 
+@cached
 async def summarize_text_abstractive(text: str) -> str:
     """
     Summarize text using abstractive summarization.
@@ -17,6 +20,7 @@ async def summarize_text_abstractive(text: str) -> str:
             return "\n".join([summary.text for summary in result.summaries])
 
 
+@cached
 async def summarize_text_extractive(text: str) -> str:
     """
     Summarize text using extractive summarization.
