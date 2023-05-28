@@ -40,8 +40,8 @@ async def get_paper_data(paper):
 
 
 @cache
-def summarize_worker(paper_text):
-    return summarize_text_abstractive(paper_text)
+def summarize_worker(doi: str, paper_text: str) -> str:
+    return doi, summarize_text_abstractive(paper_text)
 
 
 async def main():
@@ -99,20 +99,19 @@ async def main():
         loaded_paper_texts_progress = st.progress(0)
         for i, downloaded_paper in enumerate(downloaded_papers):
             if downloaded_paper:
+                # Update to use doi instead of filename
                 paper_texts[downloaded_paper.stem] = load_pdf_document(downloaded_paper)
             loaded_paper_texts_progress.progress((i + 1) / len(downloaded_papers))
 
         with st.spinner("Summarizing papers..."):
             with Pool(cpu_count()) as p:
-                sim_paper_summaries = p.map(summarize_worker, list(paper_texts.values())[:3])
+                sim_paper_summaries = p.starmap(summarize_worker, list(paper_texts.items())[:3])
 
-        for sim_paper_summary in sim_paper_summaries:
-            paper_summaries[sim_paper_summary[0]] = sim_paper_summary[1]
-            print(sim_paper_summary[0], sim_paper_summary[1][:10])
+        paper_summaries.update({doi: summary for doi, summary in sim_paper_summaries})
 
-        for i, (paper_doi, paper_summary) in enumerate(zip(paper_texts.keys(), paper_summaries)):
-            st.header(f"{paper_doi}")
-            st.write(paper_summary)
+        for i, (doi, summary) in enumerate(sim_paper_summaries):
+            st.subheader(f"{doi} ({similar_papers[i][1]})")
+            st.write(summary)
 
 
 if __name__ == "__main__":
