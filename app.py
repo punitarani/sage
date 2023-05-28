@@ -5,6 +5,9 @@ python -m streamlit run app.py
 """
 
 import asyncio
+from functools import cache
+from multiprocessing import Pool
+from multiprocessing import cpu_count
 
 import streamlit as st
 from aiocache import cached
@@ -34,6 +37,11 @@ async def get_paper_data(paper):
         paper_infos[sim_entity_id] = sim_paper_info
         return sim_paper_info
     return None
+
+
+@cache
+def summarize_worker(paper_text):
+    return summarize_text_abstractive(paper_text)
 
 
 async def main():
@@ -95,8 +103,8 @@ async def main():
             loaded_paper_texts_progress.progress((i + 1) / len(downloaded_papers))
 
         with st.spinner("Summarizing papers..."):
-            coroutines = [summarize_text_abstractive(paper_text) for paper_text in list(paper_texts.values())[:3]]
-            sim_paper_summaries = await asyncio.gather(*coroutines)
+            with Pool(cpu_count()) as p:
+                sim_paper_summaries = p.map(summarize_worker, list(paper_texts.values())[:3])
 
         for sim_paper_summary in sim_paper_summaries:
             paper_summaries[sim_paper_summary[0]] = sim_paper_summary[1]
