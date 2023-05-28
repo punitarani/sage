@@ -61,7 +61,7 @@ async def get_paper_citations(doi: str = None, entity_id: str = None) -> list[st
     Get the citations of the paper from the OpenAlex API.
     :param doi: DOI of the paper
     :param entity_id: Entity ID of the paper
-    :return: List of citations of the paper
+    :return: List of citations of the paper (Entity IDs)
     """
     response = await get_openalex_work(doi=doi, entity_id=entity_id)
     return response.get("referenced_works", [])
@@ -73,7 +73,7 @@ async def get_paper_references(doi: str = None, entity_id: str = None) -> list[d
     Get the references of the paper from the OpenAlex API.
     :param doi: DOI of the paper
     :param entity_id: Entity ID of the paper
-    :return: List of references to the paper
+    :return: List of references to the paper (OpenAlex work objects)
     """
     if entity_id is None:
         if doi is None:
@@ -101,6 +101,8 @@ def calculate_similarity_score(paper1: list[str], paper2: list[str]) -> int:
 async def find_similar_papers(doi: str) -> list[tuple[Any, Any]]:
     """
     Find similar papers based on the references they share.
+    :param doi: DOI of the paper to find similar papers for
+    :return: List of tuples of paper ID and similarity score
     """
     citations = await get_paper_citations(doi=doi)
 
