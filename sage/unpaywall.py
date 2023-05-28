@@ -36,7 +36,7 @@ async def get_paper_url(doi: str) -> str | None:
     return None
 
 
-async def get_authors(doi: str) -> list[set[str]]:
+async def get_paper_authors(doi: str) -> list[set[str]]:
     """
     Get the authors of the paper from the Unpaywall API.
     :param doi: DOI of the paper

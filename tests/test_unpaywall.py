@@ -2,12 +2,12 @@
 
 import pytest
 
+from sage.unpaywall import get_paper_info, get_paper_url, get_paper_authors, download_paper
+
 
 @pytest.mark.asyncio
 async def test_get_paper_info():
     """Test get_paper_info()"""
-
-    from sage.unpaywall import get_paper_info
 
     # Test with a valid DOI
     doi = "10.1038/s41586-021-03491-6"
@@ -24,8 +24,6 @@ async def test_get_paper_info():
 async def test_get_paper_url():
     """Test get_paper_url()"""
 
-    from sage.unpaywall import get_paper_url
-
     # Test with a valid DOI
     doi = "10.1038/s41586-021-03491-6"
     url = await get_paper_url(doi)
@@ -38,14 +36,12 @@ async def test_get_paper_url():
 
 
 @pytest.mark.asyncio
-async def test_get_authors():
-    """Test get_authors()"""
-
-    from sage.unpaywall import get_authors
+async def test_get_paper_authors():
+    """Test get_paper_authors()"""
 
     # Test with a valid DOI
     doi = "10.1038/s41586-021-03491-6"
-    authors = await get_authors(doi)
+    authors = await get_paper_authors(doi)
     assert authors == [
         {"given": "Luca", "family": "Braga", "sequence": "first"},
         {"ORCID": "http://orcid.org/0000-0002-5056-845X", "given": "Hashim", "family": "Ali", "sequence": "additional",
@@ -84,15 +80,13 @@ async def test_get_authors():
 
     # Test with an invalid DOI
     doi = "10.1038/invalid-doi"
-    authors = await get_authors(doi)
+    authors = await get_paper_authors(doi)
     assert authors == []
 
 
 @pytest.mark.asyncio
 async def test_download_paper():
     """Test download_paper()"""
-
-    from sage.unpaywall import download_paper
 
     # Test with a valid DOI
     doi = "10.1038/s41586-021-03491-6"
