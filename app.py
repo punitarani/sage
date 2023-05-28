@@ -16,12 +16,14 @@ from sage.document import load_pdf_document
 from sage.openalex import find_similar_papers, get_openalex_work
 from sage.summarize import summarize_text_abstractive
 from sage.unpaywall import get_paper_info, download_paper
+from streamlit_chat import message
+from sage.chat import Chat
 
 paper_openalex_works = {}  # entity_id -> openalex_work
 paper_infos = {}  # entity_id -> paper_info
 paper_texts = {}  # doi -> text
 paper_summaries = {}  # doi -> summary
-
+chat = Chat()
 
 @cached()
 async def get_paper_data(paper):
@@ -112,6 +114,31 @@ async def main():
         for i, (doi, summary) in enumerate(sim_paper_summaries):
             st.subheader(f"{doi} ({similar_papers[i][1]})")
             st.write(summary)
+    
+    st.divider()
+    st.header("Chat with Sage")
+    if 'generated' not in st.session_state:
+        st.session_state['generated'] = []
+
+    if 'past' not in st.session_state:
+        st.session_state['past'] = []
+        
+    def get_text():
+        input_text = st.text_input("Talk to all selected papers: ","", key="input")
+        return input_text 
+
+    user_input = get_text()
+
+    if user_input:
+        output = chat.query(user_input)
+
+        st.session_state.past.append(user_input)
+        st.session_state.generated.append(f"{output['answer']}\nSources: {output['sources']}")
+        
+        if st.session_state['generated']:
+            for i in range(len(st.session_state['generated'])-1, -1, -1):
+                message(st.session_state["generated"][i], key=str(i))
+                message(st.session_state['past'][i], is_user=True, key=str(i) + '_user')
 
 
 if __name__ == "__main__":
