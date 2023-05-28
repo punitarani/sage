@@ -54,7 +54,7 @@ def summarize_worker(doi: str, text: str) -> tuple[str, str]:
 async def main():
     st.title("Sage")
 
-    doi_input = st.text_input("DOI", "10.1038/s41586-021-03491-6")
+    doi_input = st.text_input("DOI", "10.3390/ijms232012644")
 
     with st.spinner("Fetching paper info..."):
         paper_info = await get_paper_info(doi_input)
