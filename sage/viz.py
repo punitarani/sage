@@ -6,15 +6,11 @@ import os
 import dotenv
 import openai
 import requests
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from sage.document import Document
 
 dotenv.load_dotenv()
-
-app = FastAPI()
 
 github_token = os.getenv("API_TOKEN")
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -24,6 +20,14 @@ assert openai.api_key, "OPENAI_API_KEY environment variable not set"
 gist_url = "https://api.github.com/gists"
 gist_headers = {'Authorization': f'token {github_token}'}
 gist_params = {'scope': 'gist'}
+
+# Global variables
+feature_vectors = []
+metadata = []
+
+
+class SearchQuery(BaseModel):
+    searchText: str
 
 
 def str_to_embeddings(text: str) -> list[float]:
@@ -88,39 +92,24 @@ def upload_gist(title, content, description):
     return res['files'][title]['raw_url']
 
 
-origins = ['*']
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-feature_vectors = []
-metadata = []
-
-
-class SearchQuery(BaseModel):
-    searchText: str
-
-
-@app.get("/")
-def read_root():
-    return {"status": "ok"}
-
-
-@app.post("/add")
-def add_doc(doc: Document):
+def add_document(doc: Document):
+    """
+    Add a document to the list of documents.
+    :param doc: Document to add
+    :return: Status
+    """
     embeddings = str_to_embeddings(doc.summary)
     feature_vectors.append(embeddings)
     metadata.append(doc)
     return {"status": "ok"}
 
 
-@app.post("/add-multiple")
-def add_multiple(docs: list[Document]):
+def add_multiple_documents(docs: list[Document]):
+    """
+    Add multiple documents to the list of documents.
+    :param docs: List of documents
+    :return: Status
+    """
     for page in docs:
         embeddings = str_to_embeddings(page.summary)
         feature_vectors.append(embeddings)
@@ -128,43 +117,8 @@ def add_multiple(docs: list[Document]):
     return {"status": "ok"}
 
 
-@app.get("/visualize")
 def visualize_handler():
+    """Visualize the documents."""
     url = visualize(feature_vectors, metadata)
     print({"url": url})
     return {"url": url}
-
-
-@app.post("/relatedPapers")
-def find_related_papers(query: SearchQuery):
-    print(query)
-    return [
-        {
-            "name": "Paper 1",
-            "url": "https://www.google.com",
-        },
-        {
-            "name": "Paper 2",
-            "url": "https://www.google.com",
-        },
-        {
-            "name": "Paper 3",
-            "url": "https://www.google.com",
-        },
-        {
-            "name": "Paper 4",
-            "url": "https://www.google.com",
-        },
-        {
-            "name": "Paper 5",
-            "url": "https://www.google.com",
-        }
-    ]
-
-
-@app.post("/abstract")
-def get_abstract(query: SearchQuery):
-    print(query)
-    return {
-        'abstract': "This is the abstract for the paper: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec euismod, nisl eget aliquam ultricies, nunc nisl aliquet nunc, vitae aliquam nisl nunc sit amet nunc. Donec euismod, nisl eget aliquam ultricies, nunc nisl aliquet nunc, vitae aliquam nisl nunc sit amet nunc. Donec euismod, nisl eget aliquam ultricies, nunc nisl aliquet nunc, vitae aliquam nisl nunc sit amet nunc. Donec euismod, nisl eget aliquam ultricies, nunc nisl aliquet nunc, vitae aliquam nisl nunc sit amet nunc."
-    }

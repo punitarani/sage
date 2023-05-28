@@ -18,7 +18,7 @@ from sage.openalex import find_similar_papers, get_openalex_work
 from sage.summarize import summarize_text_abstractive
 from sage.unpaywall import get_paper_info, download_paper, get_paper_authors
 from sage.utils import safe_filename
-from sage.viz import str_to_embeddings, visualize, add_multiple
+from sage.viz import str_to_embeddings, visualize, add_multiple_documents
 
 paper_openalex_works = {}  # entity_id -> openalex_work
 paper_infos = {}  # entity_id -> paper_info
@@ -147,7 +147,7 @@ async def main():
             except KeyError as e:
                 print(e)
 
-        add_multiple(docs)
+        add_multiple_documents(docs)
 
         # Embed the documents
         embeddings = []
