@@ -66,6 +66,19 @@ async def main():
     st.header(paper_info["title"])
     st.markdown(f"[{paper_info['doi']}]({paper_info['doi_url']})")
 
+    with st.spinner("Downloading paper..."):
+        paper_path = await download_paper(paper_info["doi"])
+
+    if not paper_path:
+        st.error("Failed to download paper")
+        st.stop()
+
+    with st.spinner("Analyzing paper..."):
+        paper_text = load_pdf_document(paper_path)
+        doi, paper_summary = summarize_worker(doi=doi_input, text=paper_text[:124999])
+
+        st.write(paper_summary)
+
     with st.expander("Full info"):
         st.json(paper_info)
 
@@ -80,6 +93,9 @@ async def main():
 
     st.header("Similar papers")
     for i, sim_paper_info in enumerate(similar_paper_infos):
+        if sim_paper_info is None:
+            continue
+
         # Get title of similar paper
         sim_paper_title = sim_paper_info.get("title", None)
         if not sim_paper_title:
