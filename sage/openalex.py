@@ -39,27 +39,48 @@ async def openalex_get(url: str) -> dict:
 
 
 @cached()
-async def get_paper_citations(doi: str) -> list[str]:
+async def get_openalex_work(doi: str = None, entity_id: str = None) -> dict:
     """
     Get the citations of the paper from the OpenAlex API.
     :param doi: DOI of the paper
+    :param entity_id: Entity ID of the paper
     :return: List of citations of the paper
     """
-    url = 'https://api.openalex.org/works/https://doi.org/' + doi
-    response = await openalex_get(url)
+    if doi:
+        url = 'https://api.openalex.org/works/https://doi.org/' + doi
+    elif entity_id:
+        url = 'https://api.openalex.org/works/' + entity_id
+    else:
+        raise ValueError("DOI or entity ID must be provided")
+    return await openalex_get(url)
+
+
+@cached()
+async def get_paper_citations(doi: str = None, entity_id: str = None) -> list[str]:
+    """
+    Get the citations of the paper from the OpenAlex API.
+    :param doi: DOI of the paper
+    :param entity_id: Entity ID of the paper
+    :return: List of citations of the paper
+    """
+    response = await get_openalex_work(doi=doi, entity_id=entity_id)
     return response.get("referenced_works", [])
 
 
 @cached()
-async def get_paper_references(doi: str) -> list[dict]:
+async def get_paper_references(doi: str = None, entity_id: str = None) -> list[dict]:
     """
     Get the references of the paper from the OpenAlex API.
     :param doi: DOI of the paper
+    :param entity_id: Entity ID of the paper
     :return: List of references to the paper
     """
-    url = 'https://api.openalex.org/works/' + doi
-    response = await openalex_get(url)
-    entity_id = response.get("id")
+    if entity_id is None:
+        if doi is None:
+            raise ValueError("DOI or entity ID must be provided")
+        url = 'https://api.openalex.org/works/https://doi.org/' + doi
+        response = await openalex_get(url)
+        entity_id = response.get("id")
 
     url = 'https://api.openalex.org/works?filter=cites:' + entity_id
     response = await openalex_get(url)
@@ -81,15 +102,15 @@ async def find_similar_papers(doi: str) -> list[tuple[Any, Any]]:
     """
     Find similar papers based on the references they share.
     """
-    citations = await get_paper_citations(doi)
+    citations = await get_paper_citations(doi=doi)
 
     async def fetch_and_score(citation):
         """
         Fetch the references of a paper and calculate the similarity score.
-        :param citation:
+        :param citation: DOI of the paper to fetch references for
         :return: Tuple of paper ID and similarity score
         """
-        papers_to_compare = await get_paper_references(citation)
+        papers_to_compare = await get_paper_references(entity_id=citation)
 
         return [
             (citation, calculate_similarity_score(citations, item['referenced_works']))
