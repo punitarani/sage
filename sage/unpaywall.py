@@ -46,6 +46,7 @@ async def get_authors(doi: str) -> list[set[str]]:
     return data.get("z_authors", [])
 
 
+@cached()
 async def download_paper(doi: str) -> Path | None:
     """
     Download the paper from the Unpaywall API.
