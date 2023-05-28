@@ -12,12 +12,12 @@ from multiprocessing import cpu_count
 import streamlit as st
 import streamlit.components.v1 as components
 from aiocache import cached
+from streamlit_chat import message
 
+from sage.chat import Chat
 from sage.document import load_pdf_document, Document
 from sage.openalex import find_similar_papers, get_openalex_work
 from sage.summarize import summarize_text_abstractive
-from streamlit_chat import message
-from sage.chat import Chat
 from sage.unpaywall import get_paper_info, download_paper, get_paper_authors
 from sage.utils import safe_filename
 from sage.viz import str_to_embeddings, visualize, add_multiple_documents
@@ -27,6 +27,7 @@ paper_infos = {}  # entity_id -> paper_info
 paper_texts = {}  # doi -> text
 paper_summaries = {}  # doi -> summary
 chat = Chat()
+
 
 @cached()
 async def get_paper_data(paper):
@@ -155,7 +156,7 @@ async def main():
 
             st.subheader(title)
             st.write(summary)
-    
+
     st.divider()
     st.header("Chat with Sage")
     if 'generated' not in st.session_state:
@@ -163,10 +164,10 @@ async def main():
 
     if 'past' not in st.session_state:
         st.session_state['past'] = []
-        
+
     def get_text():
-        input_text = st.text_input("Talk to all selected papers: ","", key="input")
-        return input_text 
+        input_text = st.text_input("Talk to all selected papers: ", "", key="input")
+        return input_text
 
     user_input = get_text()
 
@@ -175,9 +176,9 @@ async def main():
 
         st.session_state.past.append(user_input)
         st.session_state.generated.append(f"{output['answer']}\nSources: {output['sources']}")
-        
+
         if st.session_state['generated']:
-            for i in range(len(st.session_state['generated'])-1, -1, -1):
+            for i in range(len(st.session_state['generated']) - 1, -1, -1):
                 message(st.session_state["generated"][i], key=str(i))
                 message(st.session_state['past'][i], is_user=True, key=str(i) + '_user')
 
