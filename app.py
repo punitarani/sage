@@ -7,6 +7,7 @@ python -m streamlit run app.py
 import asyncio
 
 import streamlit as st
+from aiocache import cached
 
 from sage.document import load_pdf_document
 from sage.openalex import find_similar_papers, get_openalex_work
@@ -19,6 +20,7 @@ paper_texts = {}  # doi -> text
 paper_summaries = {}  # doi -> summary
 
 
+@cached()
 async def get_paper_data(paper):
     sim_entity_id = paper[0]
     sim_score = paper[1]
@@ -35,7 +37,6 @@ async def get_paper_data(paper):
 
 
 async def main():
-    """main function"""
     st.title("Sage")
 
     doi_input = st.text_input("DOI", "10.1038/s41586-021-03491-6")
