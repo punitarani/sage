@@ -32,9 +32,9 @@ async def get_paper_url(doi: str) -> str | None:
     :return: URL of the paper or None if not found
     """
     data = await get_paper_info(doi)
-    if "best_oa_location" in data:
-        return data["best_oa_location"]["url_for_pdf"]
-    return None
+    best_oa_location = data.get("best_oa_location", None)
+    if best_oa_location:
+        return best_oa_location.get("url_for_pdf", None)
 
 
 async def get_paper_authors(doi: str) -> list[set[str]]:
