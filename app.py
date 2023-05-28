@@ -12,12 +12,12 @@ from multiprocessing import cpu_count
 import streamlit as st
 import streamlit.components.v1 as components
 from aiocache import cached
+from streamlit_chat import message
 
+from sage.chat import Chat
 from sage.document import load_pdf_document, Document
 from sage.openalex import find_similar_papers, get_openalex_work
 from sage.summarize import summarize_text_abstractive
-from streamlit_chat import message
-from sage.chat import Chat
 from sage.unpaywall import get_paper_info, download_paper, get_paper_authors
 from sage.utils import safe_filename
 from sage.viz import str_to_embeddings, visualize, add_multiple_documents
@@ -27,6 +27,7 @@ paper_infos = {}  # entity_id -> paper_info
 paper_texts = {}  # doi -> text
 paper_summaries = {}  # doi -> summary
 chat = Chat()
+
 
 @cached()
 async def get_paper_data(paper):
@@ -56,7 +57,7 @@ def summarize_worker(doi: str, text: str) -> tuple[str, str]:
 async def main():
     st.title("Sage")
 
-    doi_input = st.text_input("DOI", "10.1038/s41586-021-03491-6")
+    doi_input = st.text_input("DOI", "10.3390/ijms232012644")
 
     with st.spinner("Fetching paper info..."):
         paper_info = await get_paper_info(doi_input)
@@ -67,6 +68,19 @@ async def main():
 
     st.header(paper_info["title"])
     st.markdown(f"[{paper_info['doi']}]({paper_info['doi_url']})")
+
+    with st.spinner("Downloading paper..."):
+        paper_path = await download_paper(paper_info["doi"])
+
+    if not paper_path:
+        st.error("Failed to download paper")
+        st.stop()
+
+    with st.spinner("Analyzing paper..."):
+        paper_text = load_pdf_document(paper_path)
+        doi, paper_summary = summarize_worker(doi=doi_input, text=paper_text[:124999])
+
+        st.write(paper_summary)
 
     with st.expander("Full info"):
         st.json(paper_info)
@@ -82,6 +96,9 @@ async def main():
 
     st.header("Similar papers")
     for i, sim_paper_info in enumerate(similar_paper_infos):
+        if sim_paper_info is None:
+            continue
+
         # Get title of similar paper
         sim_paper_title = sim_paper_info.get("title", None)
         if not sim_paper_title:
@@ -139,7 +156,7 @@ async def main():
 
             st.subheader(title)
             st.write(summary)
-    
+
     st.divider()
     st.header("Chat with Sage")
     if 'generated' not in st.session_state:
@@ -147,10 +164,10 @@ async def main():
 
     if 'past' not in st.session_state:
         st.session_state['past'] = []
-        
+
     def get_text():
-        input_text = st.text_input("Talk to all selected papers: ","", key="input")
-        return input_text 
+        input_text = st.text_input("Talk to all selected papers: ", "", key="input")
+        return input_text
 
     user_input = get_text()
 
@@ -159,9 +176,9 @@ async def main():
 
         st.session_state.past.append(user_input)
         st.session_state.generated.append(f"{output['answer']}\nSources: {output['sources']}")
-        
+
         if st.session_state['generated']:
-            for i in range(len(st.session_state['generated'])-1, -1, -1):
+            for i in range(len(st.session_state['generated']) - 1, -1, -1):
                 message(st.session_state["generated"][i], key=str(i))
                 message(st.session_state['past'][i], is_user=True, key=str(i) + '_user')
 
