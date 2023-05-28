@@ -8,6 +8,7 @@ import asyncio
 
 import streamlit as st
 
+from sage.openalex import find_similar_papers
 from sage.unpaywall import get_paper_info, download_paper
 
 if __name__ == "__main__":
@@ -28,6 +29,13 @@ if __name__ == "__main__":
 
     with st.expander("Full info"):
         st.json(paper_info)
+
+    with st.spinner("Finding similar papers..."):
+        similar_papers = asyncio.run(find_similar_papers(doi_input))
+
+    with st.expander("Similar papers"):
+        for paper in similar_papers:
+            st.write(f"{paper[0]} - {paper[1]}")
 
     with st.spinner("Downloading paper..."):
         download_path = asyncio.run(download_paper(doi_input))
